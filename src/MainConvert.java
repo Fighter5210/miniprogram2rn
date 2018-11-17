@@ -13,6 +13,7 @@ public class MainConvert {
     private static  final String jsFilePath = "/Users/wangduoyuan/工作/金山云/代码备份/小程序转RN/childrenFollowDetail.js";
     private static  final String wxmlFilePath = "/Users/wangduoyuan/工作/金山云/代码备份/小程序转RN/childrenFollowDetail.wxml";
     private static  final String wxssFilePath = "/Users/wangduoyuan/工作/金山云/代码备份/小程序转RN/childrenFollowDetail.wxss";
+    private static  final String fileName = "ChildrenFollowDetail";
 
     public static void getRNFile(String filePath){
         try {
@@ -26,7 +27,9 @@ public class MainConvert {
                 String lineTxt = null;
                 boolean flag = false;
                 while((lineTxt = bufferedReader.readLine()) != null){
-
+                    if(lineTxt.trim().contains("文件名首字母大写")){
+                        lineTxt = lineTxt.replace("文件名首字母大写",fileName);
+                    }
                     sb.append(lineTxt + "\n");
 
                     if(lineTxt.trim().contains("componentDidMount()")){
@@ -164,7 +167,6 @@ public class MainConvert {
         StringBuffer sb = new StringBuffer();
         while (matcher.find())
         {
-            System.out.println("***"+matcher.group());
             matcher.appendReplacement(sb,  matcher.group().toUpperCase());
         }
         matcher.appendTail(sb);
