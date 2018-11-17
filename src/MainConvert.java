@@ -34,7 +34,7 @@ public class MainConvert {
                     }
 
                     if(lineTxt.trim().contains("return")){
-                        sb.append("'"+toUpperCaseHeadChar(getWxmlOrWxss(wxmlFilePath))+"'");
+                        sb.append("'"+replaceState(replaceStyle(toUpperCaseHeadChar(getWxmlOrWxss(wxmlFilePath))))+"'");
                         flag=true;
                     }
 
@@ -164,7 +164,38 @@ public class MainConvert {
         StringBuffer sb = new StringBuffer();
         while (matcher.find())
         {
+            System.out.println("***"+matcher.group());
             matcher.appendReplacement(sb,  matcher.group().toUpperCase());
+        }
+        matcher.appendTail(sb);
+        return  sb.toString();
+    }
+
+    public static String replaceStyle(String str){
+        String regex = "(class=\".*?\")";
+        Pattern pattern = Pattern.compile(regex);
+        Matcher matcher = pattern.matcher(str);
+        StringBuffer sb = new StringBuffer();
+        while (matcher.find())
+        {
+            String style = matcher.group().substring(matcher.group().indexOf("\"")+1,matcher.group().lastIndexOf("\""));
+            //System.out.println("group:"+matcher.group().substring(matcher.group().indexOf("\"")+1,matcher.group().lastIndexOf("\""))+"\n");
+            matcher.appendReplacement(sb,  "style={styles."+style+"}");
+        }
+        matcher.appendTail(sb);
+        return  sb.toString();
+    }
+
+    public static String replaceState(String str){
+        String regex = "\\{\\{.*?\\}\\}";
+        Pattern pattern = Pattern.compile(regex);
+        Matcher matcher = pattern.matcher(str);
+        StringBuffer sb = new StringBuffer();
+        while (matcher.find())
+        {
+            String state = matcher.group().substring(matcher.group().indexOf("{{")+2,matcher.group().lastIndexOf("}}"));
+            //System.out.println("group:"+matcher.group().substring(matcher.group().indexOf("\"")+1,matcher.group().lastIndexOf("\""))+"\n");
+            matcher.appendReplacement(sb,  "{{this.state."+state+"}}");
         }
         matcher.appendTail(sb);
         return  sb.toString();
@@ -174,5 +205,7 @@ public class MainConvert {
 
     public static  void main(String[] str){
         getRNFile(rnFilePath);
+        //System.out.println(getRNFile(rnFilePath)));
+        //System.out.println(replaceState("{{dfdfdfd}}  {{ppppp}}"));
     }
 }
