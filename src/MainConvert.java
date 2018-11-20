@@ -6,12 +6,15 @@ import java.util.regex.Pattern;
  * Created by WANGDUOYUAN on 2018/11/16.
  */
 public class MainConvert {
-    private static  final String rnFilePath = "/Users/wangduoyuan/工作/金山云/代码备份/小程序转RN/exchange.js";
-    private static  final String jsFilePath = "/Users/wangduoyuan/工作/金山云/代码备份/小程序转RN/import/childrenFollowDetail.js";
-    private static  final String wxmlFilePath = "/Users/wangduoyuan/工作/金山云/代码备份/小程序转RN/import/childrenFollowDetail.wxml";
-    private static  final String wxssFilePath = "/Users/wangduoyuan/工作/金山云/代码备份/小程序转RN/import/childrenFollowDetail.wxss";
-    private static  final String outFile = "/Users/wangduoyuan/工作/金山云/代码备份/小程序转RN/export/childrenFollowDetail.js";
-    private static  final String className = "childrenFollowDetail";
+
+    private static  final String fileName = "childrenFollowDetail";
+
+    private static  final String rnFilePath = "D:\\工作相关\\项目开发\\小程序转RN\\import\\exchange.js";
+    private static  final String jsFilePath = "D:\\工作相关\\项目开发\\小程序转RN\\import\\"+fileName+".js";
+    private static  final String wxmlFilePath = "D:\\工作相关\\项目开发\\小程序转RN\\import\\"+fileName+".wxml";
+    private static  final String wxssFilePath = "D:\\工作相关\\项目开发\\小程序转RN\\import\\" + fileName + ".wxss";
+    private static  final String outFile = "D:\\工作相关\\项目开发\\小程序转RN\\export\\" + fileName +
+            ".js";
 
     public static void convert2RNFile(String filePath){
         try {
@@ -26,26 +29,31 @@ public class MainConvert {
                 boolean flag = false;
                 while((lineTxt = bufferedReader.readLine()) != null){
                     if(lineTxt.trim().contains("文件名首字母大写")){
-                        lineTxt = lineTxt.replace("文件名首字母大写",toUpperCaseHeadChar(className,"^[a-z].*?"));
+                        lineTxt = lineTxt.replace("文件名首字母大写",toUpperCaseHeadChar(fileName,"^[a-z].*?"));
                     }
                     sb.append(lineTxt + "\n");
 
                     if(lineTxt.trim().contains("componentDidMount()")){
-                        sb.append(getOnLoadAndOnReady(jsFilePath));
+                        String tmpStr=getOnLoadAndOnReady4JS
+                                (jsFilePath);
+                        tmpStr = replaceSimpleStr(tmpStr,"this.setData","this.setState");
+                        tmpStr = replaceSimpleStr(tmpStr,"this.data","this.state");
+                        sb.append(tmpStr);
                     }
 
                     if(lineTxt.trim().contains("return")){
-                        sb.append(replaceWxmlState(replaceWxmlStyle(toUpperCaseHeadChar(getWxmlOrWxss(wxmlFilePath),"(<|</)[a-z].*?"))));
+                        sb.append(replaceState4Wxml(replaceStyle4Wxml(toUpperCaseHeadChar(getWxmlOrWxss(wxmlFilePath),"(<|</)[a-z].*?"))));
                         flag=true;
                     }
 
                     if("}".equals(lineTxt.trim())&&flag==true){
-                        sb.append(getOnUnLoad(jsFilePath));
+                        sb.append(getOnUnLoad4JS(jsFilePath));
                         flag=false;
                     }
 
                     if(lineTxt.trim().contains("styles")){
-                        sb.append(replaceWxssChar2str(replaceWxssDisplay(replaceWxssRod2Hump(replaceWxssSize(replaceWxssStyle(getWxmlOrWxss(wxssFilePath)))))));
+                        sb.append(replaceChar2str4Wxss(replaceDisplay4Wxss(replaceRod2Hump4Wxss
+                                (replaceSize4Wxss(replaceStyle4Wxss(getWxmlOrWxss(wxssFilePath)))))));
                     }
 
                 }
@@ -65,7 +73,7 @@ public class MainConvert {
 
     }
 
-    public static String getOnLoadAndOnReady(String filePath){
+    public static String getOnLoadAndOnReady4JS(String filePath){
 
         StringBuffer sb = new StringBuffer();
         try {
@@ -103,7 +111,7 @@ public class MainConvert {
         return sb.toString();
     }
 
-    public static String getOnUnLoad(String filePath){
+    public static String getOnUnLoad4JS(String filePath){
 
         StringBuffer sb = new StringBuffer();
         try {
@@ -175,7 +183,7 @@ public class MainConvert {
     }
 
 
-    public static String replaceWxmlStyle(String str){
+    public static String replaceStyle4Wxml(String str){
         String regex = "(class=\".*?\")";
         Pattern pattern = Pattern.compile(regex);
         Matcher matcher = pattern.matcher(str);
@@ -190,23 +198,23 @@ public class MainConvert {
         return  sb.toString();
     }
 
-    public static String replaceWxmlState(String str){
+    public static String replaceState4Wxml(String str){
         String regex = "\\{\\{.*?\\}\\}";
         Pattern pattern = Pattern.compile(regex);
         Matcher matcher = pattern.matcher(str);
         StringBuffer sb = new StringBuffer();
         while (matcher.find())
         {
+            System.out.println("state-group:"+matcher.group());
             String key = matcher.group().substring(matcher.group().indexOf("{{")+2,matcher.group().lastIndexOf("}}"));
-            //System.out.println("group:"+matcher.group().substring(matcher.group().indexOf("\"")+1,matcher.group().lastIndexOf("\""))+"\n");
             matcher.appendReplacement(sb,  "{{this.state."+key+"}}");
         }
         matcher.appendTail(sb);
         return  sb.toString();
     }
 
-    public static String replaceWxssStyle(String str){
-        String regex = "(.*?\\{*?\\})";
+    public static String replaceStyle4Wxss(String str){
+        String regex = ".*?\\{*?\\}";
         Pattern pattern = Pattern.compile(regex);
         Matcher matcher = pattern.matcher(str);
         StringBuffer sb = new StringBuffer();
@@ -222,7 +230,7 @@ public class MainConvert {
         return  sb.toString();
     }
 
-    public static String replaceWxssSize(String str){
+    public static String replaceSize4Wxss(String str){
         String regex = "(\\d+)rpx";
         Pattern pattern = Pattern.compile(regex);
         Matcher matcher = pattern.matcher(str);
@@ -237,7 +245,7 @@ public class MainConvert {
         return  sb.toString();
     }
 
-    public static String replaceWxssRod2Hump(String str){
+    public static String replaceRod2Hump4Wxss(String str){
         String regex = "(-[a-z]*:)|(-[A-Z]*:)";
         Pattern pattern = Pattern.compile(regex);
         Matcher matcher = pattern.matcher(str);
@@ -253,7 +261,7 @@ public class MainConvert {
         return  sb.toString();
     }
 
-    public static String replaceWxssDisplay(String str){
+    public static String replaceDisplay4Wxss(String str){
         String regex = "display:\\s*flex";
         Pattern pattern = Pattern.compile(regex);
         Matcher matcher = pattern.matcher(str);
@@ -268,7 +276,7 @@ public class MainConvert {
         return  sb.toString();
     }
 
-    public static String replaceWxssChar2str(String str){
+    public static String replaceChar2str4Wxss(String str){
         String regex = ":\\s*[^:{]*?,";
         Pattern pattern = Pattern.compile(regex);
         Matcher matcher = pattern.matcher(str);
@@ -280,28 +288,32 @@ public class MainConvert {
             try {
                 Integer.parseInt(prop.trim());
             }catch (Exception e){
-                matcher.appendReplacement(sb, ":\"" + prop.trim() + "\"");
+                matcher.appendReplacement(sb, ":\"" + prop.trim() + "\",");
             }
 
 
         }
         matcher.appendTail(sb);
+        System.out.println("输出:"+sb.toString());
         return  sb.toString();
     }
 
-    /**
-     * 利用正则表达式判断字符串是否是数字
-     * @param str
-     * @return
-     */
-    public static boolean isNumeric(String str){
-        Pattern pattern = Pattern.compile("[0-9]*");
-        Matcher isNum = pattern.matcher(str);
-        if( !isNum.matches() ){
-            return false;
+    public static String replaceSimpleStr(String str,String regex,String replaceStr){
+        Pattern pattern = Pattern.compile(regex);
+        Matcher matcher = pattern.matcher(str);
+        StringBuffer sb = new StringBuffer();
+        while (matcher.find())
+        {
+            System.out.println("setData-group:"+matcher.group());
+            matcher.appendReplacement(sb, replaceStr);
+
+
         }
-        return true;
+        matcher.appendTail(sb);
+        System.out.println("输出:"+sb.toString());
+        return  sb.toString();
     }
+
 
 
     public static  void main(String[] str){
