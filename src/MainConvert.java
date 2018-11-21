@@ -42,7 +42,13 @@ public class MainConvert {
                     }
 
                     if(lineTxt.trim().contains("return")){
-                        sb.append(replaceState4Wxml(replaceStyle4Wxml(toUpperCaseHeadChar(getWxmlOrWxss(wxmlFilePath),"(<|</)[a-z].*?"))));
+                        String temStr = replaceStyle4Wxml(toUpperCaseHeadChar(getWxmlOrWxss
+                                        (wxmlFilePath),"(<|</)[a-z].*?"));
+                        temStr = replaceState4Wxml(temStr);
+                        temStr = replaceState4Wxml(temStr);
+                        temStr = replaceSimpleStr(temStr,"<!--.*?-->","");
+                        temStr = replaceSimpleStr(temStr,"/\\*.*?\\*/","");
+                        sb.append(temStr);
                         flag=true;
                     }
 
@@ -52,8 +58,12 @@ public class MainConvert {
                     }
 
                     if(lineTxt.trim().contains("styles")){
-                        sb.append(replaceChar2str4Wxss(replaceDisplay4Wxss(replaceRod2Hump4Wxss
-                                (replaceSize4Wxss(replaceStyle4Wxss(getWxmlOrWxss(wxssFilePath)))))));
+                        String temStr = replaceChar2str4Wxss(replaceDisplay4Wxss(replaceRod2Hump4Wxss
+                                (replaceSize4Wxss(replaceStyle4Wxss(getWxmlOrWxss
+                                        (wxssFilePath))))));
+                        temStr = replaceSimpleStr(temStr,"<!--.*-->","");
+                        temStr = replaceSimpleStr(temStr,"/.*?/","");
+                        sb.append(temStr);
                     }
 
                 }
