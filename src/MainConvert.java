@@ -45,15 +45,15 @@ public class MainConvert {
                         String temStr = replaceStyle4Wxml(toUpperCaseHeadChar(getWxmlOrWxss
                                         (wxmlFilePath),"(<|</)[a-z].*?"));
                         temStr = replaceState4Wxml(temStr);
-                        temStr = replaceState4Wxml(temStr);
-                        temStr = replaceSimpleStr(temStr,"<!--.*?-->","");
-                        temStr = replaceSimpleStr(temStr,"/\\*.*?\\*/","");
+                        temStr = replaceBlock4Wxml(temStr);
+                        temStr = replaceSimpleStr(temStr,"<!--.*[^-->]-->","");
+                        temStr = replaceSimpleStr(temStr,"/\\*.*[^\\*/]\\*/","");
                         sb.append(temStr);
                         flag=true;
                     }
 
                     if("}".equals(lineTxt.trim())&&flag==true){
-                        sb.append(getOnUnLoad4JS(jsFilePath));
+                        sb.append(getAfterOnUnLoad4JS(jsFilePath));
                         flag=false;
                     }
 
@@ -61,8 +61,9 @@ public class MainConvert {
                         String temStr = replaceChar2str4Wxss(replaceDisplay4Wxss(replaceRod2Hump4Wxss
                                 (replaceSize4Wxss(replaceStyle4Wxss(getWxmlOrWxss
                                         (wxssFilePath))))));
-                        temStr = replaceSimpleStr(temStr,"<!--.*-->","");
-                        temStr = replaceSimpleStr(temStr,"/.*?/","");
+                        temStr = replaceSimpleStr(temStr,"<!--.*[^-->]-->","");
+                        temStr = replaceSimpleStr(temStr,"/\\*.*[^\\*/]\\*/","");
+                        temStr = replaceMarginPadding4Wxss(temStr);
                         sb.append(temStr);
                     }
 
@@ -118,10 +119,10 @@ public class MainConvert {
             System.out.println("读取文件内容出错");
             e.printStackTrace();
         }
-        return sb.toString();
+        return replaceFunction4Js(sb.toString());
     }
 
-    public static String getOnUnLoad4JS(String filePath){
+    public static String getAfterOnUnLoad4JS(String filePath){
 
         StringBuffer sb = new StringBuffer();
         try {
@@ -132,17 +133,22 @@ public class MainConvert {
                         new FileInputStream(file),encoding);//考虑到编码格式
                 BufferedReader bufferedReader = new BufferedReader(read);
                 String lineTxt = null;
-                boolean flag=false;
+                int i=0;
                 while((lineTxt = bufferedReader.readLine()) != null){
-                    if("},".equals(lineTxt.trim())){
-                        flag=false;
+
+                    if(lineTxt.trim().equals("})")){
+                        i=0;
                     }
-                    if(flag){
+                    if(i>=2){
                         sb.append(lineTxt+"\n");
                     }
-                    if(lineTxt.trim().contains("onUnLoad:")){
-                        flag=true;
+                    if(lineTxt.trim().contains("onUnload:")){
+                        i++;
                     }
+                    if(i==1&&"},".equals(lineTxt.trim())){
+                        i++;
+                    }
+
                 }
                 read.close();
             }else{
@@ -152,7 +158,7 @@ public class MainConvert {
             System.out.println("读取文件内容出错");
             e.printStackTrace();
         }
-        return sb.toString();
+        return replaceFunction4Js(sb.toString());
     }
 
     public static String getWxmlOrWxss(String filePath){
@@ -167,7 +173,7 @@ public class MainConvert {
                 BufferedReader bufferedReader = new BufferedReader(read);
                 String lineTxt = null;
                 while((lineTxt = bufferedReader.readLine()) != null){
-                    sb.append(lineTxt);
+                    sb.append(lineTxt+"\n");
                 }
                 read.close();
             }else{
@@ -194,14 +200,19 @@ public class MainConvert {
 
 
     public static String replaceStyle4Wxml(String str){
-        String regex = "(class=\".*?\")";
+        String regex = "(class=\".*?\")|(class='.*?')";
         Pattern pattern = Pattern.compile(regex);
         Matcher matcher = pattern.matcher(str);
         StringBuffer sb = new StringBuffer();
         while (matcher.find())
         {
             System.out.println("classgroup:"+matcher.group());
-            String style = matcher.group().substring(matcher.group().indexOf("\"")+1,matcher.group().lastIndexOf("\""));
+            String positionStr = "\"";
+            if(matcher.group().contains("'")){
+                positionStr="'";
+            }
+            String style = matcher.group().substring(matcher.group().indexOf(positionStr)+1,
+                    matcher.group().lastIndexOf(positionStr));
             matcher.appendReplacement(sb,  "style={styles."+style+"}");
         }
         matcher.appendTail(sb);
@@ -209,7 +220,7 @@ public class MainConvert {
     }
 
     public static String replaceState4Wxml(String str){
-        String regex = "\\{\\{.*?\\}\\}";
+        String regex = "\\{\\{[^\\}\\}].*?\\}\\}";
         Pattern pattern = Pattern.compile(regex);
         Matcher matcher = pattern.matcher(str);
         StringBuffer sb = new StringBuffer();
@@ -217,14 +228,15 @@ public class MainConvert {
         {
             System.out.println("state-group:"+matcher.group());
             String key = matcher.group().substring(matcher.group().indexOf("{{")+2,matcher.group().lastIndexOf("}}"));
-            matcher.appendReplacement(sb,  "{{this.state."+key+"}}");
+            matcher.appendReplacement(sb,  "{this.state."+key+"}");
         }
         matcher.appendTail(sb);
         return  sb.toString();
     }
 
     public static String replaceStyle4Wxss(String str){
-        String regex = ".*?\\{*?\\}";
+        //String regex = ".*?\\s*\{\n*?\n\\s*\}";
+        String regex = ".*?\\s*(?<=\\{)[^}]*(\\s?=*})";
         Pattern pattern = Pattern.compile(regex);
         Matcher matcher = pattern.matcher(str);
         StringBuffer sb = new StringBuffer();
@@ -232,6 +244,9 @@ public class MainConvert {
         {
             System.out.println("style-group:"+matcher.group());
             String key = matcher.group().substring(matcher.group().indexOf(".")+1,matcher.group().lastIndexOf("{"));
+            if(key.contains(".")){
+                key=key.replaceAll("\\s*\\.","_");
+            }
             String content = matcher.group().substring(matcher.group().lastIndexOf("{")+1,matcher.group().lastIndexOf("}"));
             content = content.replaceAll(";",",");
             matcher.appendReplacement(sb,  key+":{"+content+"},");
@@ -304,7 +319,6 @@ public class MainConvert {
 
         }
         matcher.appendTail(sb);
-        System.out.println("输出:"+sb.toString());
         return  sb.toString();
     }
 
@@ -314,13 +328,95 @@ public class MainConvert {
         StringBuffer sb = new StringBuffer();
         while (matcher.find())
         {
-            System.out.println("setData-group:"+matcher.group());
+            System.out.println("simple-group:"+matcher.group());
             matcher.appendReplacement(sb, replaceStr);
 
 
         }
         matcher.appendTail(sb);
-        System.out.println("输出:"+sb.toString());
+        return  sb.toString();
+    }
+
+    public static String replaceFunction4Js(String str){
+        String regex = ":\\s*function\\s*\\(.*?\\)\\s*\\{";
+        Pattern pattern = Pattern.compile(regex);
+        Matcher matcher = pattern.matcher(str);
+        StringBuffer sb = new StringBuffer();
+        while (matcher.find())
+        {
+            System.out.println("function-group:"+matcher.group());
+            String functionName = matcher.group().substring(0,matcher.group().indexOf(":"));
+            String param = matcher.group().substring(matcher.group().indexOf("(")+1,matcher
+                    .group().indexOf(")"));
+            matcher.appendReplacement(sb, functionName+"=("+param+")=>{");
+
+
+        }
+        matcher.appendTail(sb);
+        return  sb.toString();
+    }
+
+    public static String replaceBlock4Wxml(String str){
+
+        String regex = "(<Block\\s*wx:if\\s*=\\s*.*?>)|(<Block\\s*wx:else\\s*>)|(</Block>)";
+        Pattern pattern = Pattern.compile(regex);
+        Matcher matcher = pattern.matcher(str);
+        StringBuffer sb = new StringBuffer();
+        while (matcher.find())
+        {
+            System.out.println("block-group:"+matcher.group());
+            String group = matcher.group();
+
+            String content;
+            String replaceStr;
+            if(group.contains("if")){
+                content = matcher.group().substring(group.indexOf("\"")+1,group
+                        .indexOf("}"));
+                replaceStr = content+"?(";
+            }else if(group.contains("else")){
+                replaceStr="):(";
+            }else{
+                replaceStr=")}";
+            }
+            matcher.appendReplacement(sb, replaceStr);
+        }
+        matcher.appendTail(sb);
+        return  sb.toString();
+    }
+
+    public static String replaceMarginPadding4Wxss(String str){
+
+        String regex = "(margin\\s*:.*?,)|(padding\\s*:.*?,)";
+        Pattern pattern = Pattern.compile(regex);
+        Matcher matcher = pattern.matcher(str);
+        StringBuffer sb = new StringBuffer();
+        while (matcher.find())
+        {
+            System.out.println("margin-padding-group:"+matcher.group());
+            String group = matcher.group();
+            String key="";
+            if(group.contains("margin")){
+                key = "margin";
+            }else if(group.contains("padding")){
+                key = "padding";
+            }
+            String replaceStr;
+            String value = group.replaceAll("(margin\\s*:)|(padding\\s*:)|(,)|(\")","");
+            String[] valueArr= value.split("\\s+");
+            if(valueArr.length==2){
+                replaceStr = key+"Top:"+valueArr[0]+",\n"+key+"Bottom:"+valueArr[0]+",\n" +
+                        key + "Leftt:" + valueArr[1] + ",\n" + key + "Right:" +
+                        valueArr[1] + ",";
+                matcher.appendReplacement(sb, replaceStr);
+            }else if(valueArr.length==4){
+                replaceStr = key+"Top:"+valueArr[0]+",\n"+key+"Right:"+valueArr[1]+",\n" +
+                        key + "Bottom:" + valueArr[2] + "\n" + key + "Leftt:" + valueArr[3]
+                        + ",";
+                matcher.appendReplacement(sb, replaceStr);
+            }
+
+        }
+        matcher.appendTail(sb);
         return  sb.toString();
     }
 
