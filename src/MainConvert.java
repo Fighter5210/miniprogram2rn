@@ -13,9 +13,10 @@ public class MainConvert {
 
     public static void convert2RNFile(String fileName){
          String rnFilePath = "D:\\工作相关\\项目开发\\小程序转RN\\exchange\\exchange.js";
-         String jsFilePath = "D:\\工作相关\\项目开发\\小程序转RN\\import\\"+fileName+".js";
-         String wxmlFilePath = "D:\\工作相关\\项目开发\\小程序转RN\\import\\"+fileName+".wxml";
-         String wxssFilePath = "D:\\工作相关\\项目开发\\小程序转RN\\import\\" + fileName + ".wxss";
+         String jsFilePath = "D:\\工作相关\\项目开发\\小程序转RN\\import\\"+fileName+"\\"+fileName+".js";
+         String wxmlFilePath = "D:\\工作相关\\项目开发\\小程序转RN\\import\\" + fileName + "\\"+fileName+".wxml";
+         String wxssFilePath = "D:\\工作相关\\项目开发\\小程序转RN\\import\\" + fileName + "\\" + fileName + ".wxss";
+         fileName =toUpperCaseHeadChar(fileName,"^[a-z].*?");
          String outFile = "D:\\工作相关\\项目开发\\小程序转RN\\export\\" + fileName +
                 ".js";
 
@@ -127,6 +128,7 @@ public class MainConvert {
     public static String getAfterOnUnLoad4JS(String filePath){
 
         StringBuffer sb = new StringBuffer();
+        String returnStr="";
         try {
             String encoding="utf8";
             File file=new File(filePath);
@@ -134,13 +136,10 @@ public class MainConvert {
                 InputStreamReader read = new InputStreamReader(
                         new FileInputStream(file),encoding);//考虑到编码格式
                 BufferedReader bufferedReader = new BufferedReader(read);
-                String lineTxt = null;
+                String lineTxt;
                 int i=0;
                 while((lineTxt = bufferedReader.readLine()) != null){
 
-                    if(lineTxt.trim().equals("})")){
-                        i=0;
-                    }
                     if(i>=2){
                         sb.append(lineTxt+"\n");
                     }
@@ -152,6 +151,8 @@ public class MainConvert {
                     }
 
                 }
+
+                returnStr = sb.toString().substring(0,sb.toString().lastIndexOf("})"));
                 read.close();
             }else{
                 System.out.println("找不到指定的文件"+filePath);
@@ -160,7 +161,7 @@ public class MainConvert {
             System.out.println("读取文件内容出错"+filePath);
             e.printStackTrace();
         }
-        return replaceFunction4Js(sb.toString());
+        return replaceFunction4Js(returnStr);
     }
 
     public static String getWxmlOrWxss(String filePath){
@@ -273,7 +274,7 @@ public class MainConvert {
     }
 
     public static String replaceRod2Hump4Wxss(String str){
-        String regex = "(-[a-z]*:)|(-[A-Z]*:)";
+        String regex = "(-[a-z].*\\s*:)";
         Pattern pattern = Pattern.compile(regex);
         Matcher matcher = pattern.matcher(str);
         StringBuffer sb = new StringBuffer();
@@ -348,9 +349,10 @@ public class MainConvert {
         {
             System.out.println("function-group:"+matcher.group());
             String functionName = matcher.group().substring(0,matcher.group().indexOf(":"));
-            String param = matcher.group().substring(matcher.group().indexOf("(")+1,matcher
+            String param = matcher.group().substring(matcher.group().indexOf("(") + 1, matcher
+
                     .group().indexOf(")"));
-            matcher.appendReplacement(sb, functionName+"=("+param+")=>{");
+            matcher.appendReplacement(sb, functionName + "=(" + param + ")=>{");
 
 
         }
@@ -422,32 +424,39 @@ public class MainConvert {
         return  sb.toString();
     }
 
-    public static List<String> getFileNameList(){
-        String fileDir = "D:\\工作相关\\项目开发\\小程序转RN\\import\\";
-        File file=new File(fileDir);
+    public static List<String> getFileNameList(String filePath,List<String> fileNameList){
+        File file=new File(filePath);
         // 获得该文件夹内的所有文件
         File[] array = file.listFiles();
-        List<String> fileNameList  = new ArrayList<>();
+        String fileName = "";
         for(int i=0;i<array.length;i++)
         {
             if(array[i].isFile())//如果是文件
             {
-                String fileName = array[i].getName();
+                fileName = array[i].getName();
                 fileName = fileName.substring(0,fileName.indexOf("."));
+                // 只输出文件名字
+                System.out.println(fileName);
                 if(!fileNameList.contains(fileName)) {
                     fileNameList.add(fileName);
                 }
-                // 只输出文件名字
-                System.out.println(fileName);
+            } else if(array[i].isDirectory())//如果是文件夹
+            {
+                //文件夹需要调用递归 ，深度+1
+                getFileNameList(array[i].getPath(),fileNameList);
             }
+
+
         }
         return  fileNameList;
     }
 
     public static  void main(String[] str){
-        List<String> fileNameList = getFileNameList();
+        List<String> fileNameList = getFileNameList("D:\\工作相关\\项目开发\\小程序转RN\\import\\",new
+                ArrayList<>());
         if(fileNameList!=null){
             for(String fileName:fileNameList){
+                System.out.println("文件名输出"+fileName);
                 convert2RNFile(fileName);
             }
         }
