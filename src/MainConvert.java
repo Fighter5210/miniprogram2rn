@@ -1,4 +1,6 @@
 import java.io.*;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -7,19 +9,19 @@ import java.util.regex.Pattern;
  */
 public class MainConvert {
 
-    private static  final String fileName = "childrenFollowDetail";
 
-    private static  final String rnFilePath = "D:\\工作相关\\项目开发\\小程序转RN\\import\\exchange.js";
-    private static  final String jsFilePath = "D:\\工作相关\\项目开发\\小程序转RN\\import\\"+fileName+".js";
-    private static  final String wxmlFilePath = "D:\\工作相关\\项目开发\\小程序转RN\\import\\"+fileName+".wxml";
-    private static  final String wxssFilePath = "D:\\工作相关\\项目开发\\小程序转RN\\import\\" + fileName + ".wxss";
-    private static  final String outFile = "D:\\工作相关\\项目开发\\小程序转RN\\export\\" + fileName +
-            ".js";
 
-    public static void convert2RNFile(String filePath){
+    public static void convert2RNFile(String fileName){
+         String rnFilePath = "D:\\工作相关\\项目开发\\小程序转RN\\exchange\\exchange.js";
+         String jsFilePath = "D:\\工作相关\\项目开发\\小程序转RN\\import\\"+fileName+".js";
+         String wxmlFilePath = "D:\\工作相关\\项目开发\\小程序转RN\\import\\"+fileName+".wxml";
+         String wxssFilePath = "D:\\工作相关\\项目开发\\小程序转RN\\import\\" + fileName + ".wxss";
+         String outFile = "D:\\工作相关\\项目开发\\小程序转RN\\export\\" + fileName +
+                ".js";
+
         try {
             String encoding="utf8";
-            File file=new File(filePath);
+            File file=new File(rnFilePath);
             StringBuffer sb = new StringBuffer();
             if(file.isFile() && file.exists()){ //判断文件是否存在
                 InputStreamReader read = new InputStreamReader(
@@ -45,7 +47,7 @@ public class MainConvert {
                         String temStr = replaceStyle4Wxml(toUpperCaseHeadChar(getWxmlOrWxss
                                         (wxmlFilePath),"(<|</)[a-z].*?"));
                         temStr = replaceState4Wxml(temStr);
-                        temStr = replaceBlock4Wxml(temStr);
+                        //temStr = replaceBlock4Wxml(temStr);
                         temStr = replaceSimpleStr(temStr,"<!--.*[^-->]-->","");
                         temStr = replaceSimpleStr(temStr,"/\\*.*[^\\*/]\\*/","");
                         sb.append(temStr);
@@ -75,10 +77,10 @@ public class MainConvert {
                 ps.println(sb.toString());// 往文件里写入字符串
 
             }else{
-                System.out.println("找不到指定的文件");
+                System.out.println("找不到指定的文件"+rnFilePath);
             }
         } catch (Exception e) {
-            System.out.println("读取文件内容出错");
+            System.out.println("读取文件内容出错"+rnFilePath);
             e.printStackTrace();
         }
 
@@ -113,10 +115,10 @@ public class MainConvert {
                 }
                 read.close();
             }else{
-                System.out.println("找不到指定的文件");
+                System.out.println("找不到指定的文件"+filePath);
             }
         } catch (Exception e) {
-            System.out.println("读取文件内容出错");
+            System.out.println("读取文件内容出错"+filePath);
             e.printStackTrace();
         }
         return replaceFunction4Js(sb.toString());
@@ -152,10 +154,10 @@ public class MainConvert {
                 }
                 read.close();
             }else{
-                System.out.println("找不到指定的文件");
+                System.out.println("找不到指定的文件"+filePath);
             }
         } catch (Exception e) {
-            System.out.println("读取文件内容出错");
+            System.out.println("读取文件内容出错"+filePath);
             e.printStackTrace();
         }
         return replaceFunction4Js(sb.toString());
@@ -177,10 +179,10 @@ public class MainConvert {
                 }
                 read.close();
             }else{
-                System.out.println("找不到指定的文件");
+                System.out.println("找不到指定的文件"+filePath);
             }
         } catch (Exception e) {
-            System.out.println("读取文件内容出错");
+            System.out.println("读取文件内容出错"+filePath);
             e.printStackTrace();
         }
         return sb.toString();
@@ -356,33 +358,33 @@ public class MainConvert {
         return  sb.toString();
     }
 
-    public static String replaceBlock4Wxml(String str){
-
-        String regex = "(<Block\\s*wx:if\\s*=\\s*.*?>)|(<Block\\s*wx:else\\s*>)|(</Block>)";
-        Pattern pattern = Pattern.compile(regex);
-        Matcher matcher = pattern.matcher(str);
-        StringBuffer sb = new StringBuffer();
-        while (matcher.find())
-        {
-            System.out.println("block-group:"+matcher.group());
-            String group = matcher.group();
-
-            String content;
-            String replaceStr;
-            if(group.contains("if")){
-                content = matcher.group().substring(group.indexOf("\"")+1,group
-                        .indexOf("}"));
-                replaceStr = content+"?(";
-            }else if(group.contains("else")){
-                replaceStr="):(";
-            }else{
-                replaceStr=")}";
-            }
-            matcher.appendReplacement(sb, replaceStr);
-        }
-        matcher.appendTail(sb);
-        return  sb.toString();
-    }
+//    public static String replaceBlock4Wxml(String str){
+//
+//        String regex = "(<Block\\s*wx:if\\s*=\\s*.*?>)|(<Block\\s*wx:else\\s*>)|(</Block>)";
+//        Pattern pattern = Pattern.compile(regex);
+//        Matcher matcher = pattern.matcher(str);
+//        StringBuffer sb = new StringBuffer();
+//        while (matcher.find())
+//        {
+//            System.out.println("block-group:"+matcher.group());
+//            String group = matcher.group();
+//
+//            String content;
+//            String replaceStr;
+//            if(group.contains("if")){
+//                content = matcher.group().substring(group.indexOf("\"")+1,group
+//                        .indexOf("}"));
+//                replaceStr = content+"?(";
+//            }else if(group.contains("else")){
+//                replaceStr="):(";
+//            }else{
+//                replaceStr=")}";
+//            }
+//            matcher.appendReplacement(sb, replaceStr);
+//        }
+//        matcher.appendTail(sb);
+//        return  sb.toString();
+//    }
 
     public static String replaceMarginPadding4Wxss(String str){
 
@@ -405,12 +407,12 @@ public class MainConvert {
             String[] valueArr= value.split("\\s+");
             if(valueArr.length==2){
                 replaceStr = key+"Top:"+valueArr[0]+",\n"+key+"Bottom:"+valueArr[0]+",\n" +
-                        key + "Leftt:" + valueArr[1] + ",\n" + key + "Right:" +
+                        key + "Left:" + valueArr[1] + ",\n" + key + "Right:" +
                         valueArr[1] + ",";
                 matcher.appendReplacement(sb, replaceStr);
             }else if(valueArr.length==4){
                 replaceStr = key+"Top:"+valueArr[0]+",\n"+key+"Right:"+valueArr[1]+",\n" +
-                        key + "Bottom:" + valueArr[2] + "\n" + key + "Leftt:" + valueArr[3]
+                        key + "Bottom:" + valueArr[2] + "\n" + key + "Left:" + valueArr[3]
                         + ",";
                 matcher.appendReplacement(sb, replaceStr);
             }
@@ -420,11 +422,34 @@ public class MainConvert {
         return  sb.toString();
     }
 
-
+    public static List<String> getFileNameList(){
+        String fileDir = "D:\\工作相关\\项目开发\\小程序转RN\\import\\";
+        File file=new File(fileDir);
+        // 获得该文件夹内的所有文件
+        File[] array = file.listFiles();
+        List<String> fileNameList  = new ArrayList<>();
+        for(int i=0;i<array.length;i++)
+        {
+            if(array[i].isFile())//如果是文件
+            {
+                String fileName = array[i].getName();
+                fileName = fileName.substring(0,fileName.indexOf("."));
+                if(!fileNameList.contains(fileName)) {
+                    fileNameList.add(fileName);
+                }
+                // 只输出文件名字
+                System.out.println(fileName);
+            }
+        }
+        return  fileNameList;
+    }
 
     public static  void main(String[] str){
-        convert2RNFile(rnFilePath);
-        //System.out.println(getRNFile(rnFilePath)));
-        //System.out.println(replaceState("{{dfdfdfd}}  {{ppppp}}"));
+        List<String> fileNameList = getFileNameList();
+        if(fileNameList!=null){
+            for(String fileName:fileNameList){
+                convert2RNFile(fileName);
+            }
+        }
     }
 }
